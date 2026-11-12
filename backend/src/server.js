@@ -31,6 +31,30 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 
+// Root API Welcome & Status
+app.get('/', (_req, res) => {
+  res.json({
+    status: 'OK',
+    service: 'Rishi Healthcare & Hospital Management System API',
+    message: 'Backend server is running successfully.',
+    website: 'http://localhost:3000',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      patients: '/api/patients',
+      doctors: '/api/doctors',
+      departments: '/api/departments',
+      appointments: '/api/appointments',
+      medicalRecords: '/api/medical-records',
+      rooms: '/api/rooms',
+      pharmacy: '/api/pharmacy',
+      billing: '/api/billing',
+      lab: '/api/lab',
+      dashboard: '/api/dashboard',
+    },
+  });
+});
+
 // Health Check
 app.get('/api/health', (_req, res) => {
   res.json({
