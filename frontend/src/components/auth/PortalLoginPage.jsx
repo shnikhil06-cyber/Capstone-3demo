@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RishiLogo from '../common/RishiLogo.jsx';
 import hospitalBg from '../../assets/hospital-bg.jpg';
 import {
@@ -20,12 +20,34 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 
-export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite }) {
+export default function PortalLoginPage({
+  initialIsAdmin = false,
+  initialMode = 'login',
+  currentUser = null,
+  onGoToWebsite,
+  onSwitchAdmin,
+  onSwitchMode,
+  onLoginSuccess,
+}) {
   const { login, register } = useAuth();
 
   // "Are you an Admin?" state
   const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
-  const [patientMode, setPatientMode] = useState('login'); // 'login' | 'register'
+  const [patientMode, setPatientMode] = useState(initialMode || 'login'); // 'login' | 'register'
+
+  // Sync internal state when browser Back or Forward button changes the URL / props
+  useEffect(() => {
+    setIsAdmin(initialIsAdmin);
+    if (initialIsAdmin) {
+      setEmail('admin@hospital.com');
+    } else {
+      setEmail('rohit.kumar@example.com');
+    }
+  }, [initialIsAdmin]);
+
+  useEffect(() => {
+    setPatientMode(initialMode || 'login');
+  }, [initialMode]);
 
   // Form inputs
   const [email, setEmail] = useState(initialIsAdmin ? 'admin@hospital.com' : 'rohit.kumar@example.com');
@@ -45,8 +67,9 @@ export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite 
     setError('');
     setLoading(true);
     try {
+      let res;
       if (patientMode === 'register') {
-        await register({
+        res = await register({
           email,
           password,
           name,
@@ -58,7 +81,10 @@ export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite 
           address,
         });
       } else {
-        await login(email, password);
+        res = await login(email, password);
+      }
+      if (onLoginSuccess && res?.user) {
+        onLoginSuccess(res.user);
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
@@ -72,7 +98,10 @@ export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite 
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      const res = await login(email, password);
+      if (onLoginSuccess && res?.user) {
+        onLoginSuccess(res.user);
+      }
     } catch (err) {
       setError(err.message || 'Admin authentication failed.');
     } finally {
@@ -179,6 +208,22 @@ export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite 
           <div className="md:w-7/12 p-8 md:p-10 flex flex-col justify-between bg-white">
             <div>
               {/* PRIMARY PROMPT: "Are you an Admin?" */}
+              {currentUser && (
+                <div className="mb-4 p-3 rounded-2xl bg-sky-50 border border-sky-200 text-xs flex items-center justify-between gap-3 text-sky-900">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0" />
+                    <span>Signed in as <strong className="font-bold">{currentUser.name || currentUser.username}</strong> ({currentUser.role})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onLoginSuccess && onLoginSuccess(currentUser)}
+                    className="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg text-[11px] shrink-0"
+                  >
+                    Go to Portal →
+                  </button>
+                </div>
+              )}
+
               <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200 mb-6">
                 <div className="text-center text-xs font-extrabold text-maxblue-800 mb-2.5 uppercase tracking-wider flex items-center justify-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-maxorange-500" />
@@ -194,6 +239,7 @@ export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite 
                       setError('');
                       setEmail('rohit.kumar@example.com');
                       setPassword('Password@123');
+                      if (onSwitchAdmin) onSwitchAdmin(false);
                     }}
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
                       !isAdmin
@@ -212,6 +258,7 @@ export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite 
                       setError('');
                       setEmail('admin@hospital.com');
                       setPassword('Password@123');
+                      if (onSwitchAdmin) onSwitchAdmin(true);
                     }}
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
                       isAdmin
@@ -359,7 +406,11 @@ export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite 
                           New patient?{' '}
                           <button
                             type="button"
-                            onClick={() => { setPatientMode('register'); setEmail(''); }}
+                            onClick={() => {
+                              setPatientMode('register');
+                              setEmail('');
+                              if (onSwitchMode) onSwitchMode('register');
+                            }}
                             className="text-maxorange-600 font-bold hover:underline"
                           >
                             Register here
@@ -370,7 +421,11 @@ export default function PortalLoginPage({ initialIsAdmin = false, onGoToWebsite 
                           Already registered?{' '}
                           <button
                             type="button"
-                            onClick={() => { setPatientMode('login'); setEmail('rohit.kumar@example.com'); }}
+                            onClick={() => {
+                              setPatientMode('login');
+                              setEmail('rohit.kumar@example.com');
+                              if (onSwitchMode) onSwitchMode('login');
+                            }}
                             className="text-maxorange-600 font-bold hover:underline"
                           >
                             Sign In

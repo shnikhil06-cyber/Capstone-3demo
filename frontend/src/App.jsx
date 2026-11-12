@@ -32,10 +32,10 @@ export default function App() {
   const { user, isLoading, logout, quickSwitch } = useAuth();
 
   // Primary View Controller: 'website' | 'login' | 'patient' | 'admin'
-  // Primary View Controller: 'website' | 'login' | 'patient' | 'admin'
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const initialUrlView = searchParams ? searchParams.get('view') : null;
   const initialIsAdmin = searchParams ? searchParams.get('admin') === 'true' : false;
+  const initialLoginMode = searchParams ? (searchParams.get('mode') || 'login') : 'login';
   const initialAdminTab = searchParams ? searchParams.get('tab') : null;
   const initialHash = typeof window !== 'undefined' ? window.location.hash : '';
 
@@ -46,15 +46,18 @@ export default function App() {
 
   const [viewMode, setViewMode] = useState(defaultMode);
   const [loginAsAdmin, setLoginAsAdmin] = useState(initialIsAdmin);
+  const [loginMode, setLoginMode] = useState(initialLoginMode);
   const [activeTab, setActiveTab] = useState(initialAdminTab || 'dashboard');
+  const [patientTab, setPatientTab] = useState(initialUrlView === 'patient' && initialAdminTab ? initialAdminTab : 'overview');
 
   // Unified Navigation Controller: synchronizes viewMode, admin login state, and browser history
   const navigateTo = (newMode, options = {}) => {
-    const { admin = false, targetId = '', tab = '', replace = false } = options;
+    const { admin = false, mode = 'login', targetId = '', tab = '', replace = false } = options;
 
     setViewMode(newMode);
     if (newMode === 'login') {
       setLoginAsAdmin(admin);
+      setLoginMode(mode);
     }
     if (newMode === 'admin' && tab) {
       setActiveTab(tab);
@@ -65,12 +68,22 @@ export default function App() {
       let targetUrl = pathname;
 
       if (newMode === 'login') {
-        targetUrl = admin ? `${pathname}?view=login&admin=true` : `${pathname}?view=login`;
+        const queryParams = new URLSearchParams();
+        queryParams.set('view', 'login');
+        if (admin) queryParams.set('admin', 'true');
+        if (mode && mode !== 'login') queryParams.set('mode', mode);
+        targetUrl = `${pathname}?${queryParams.toString()}`;
       } else if (newMode === 'patient') {
-        targetUrl = `${pathname}?view=patient`;
+        const queryParams = new URLSearchParams();
+        queryParams.set('view', 'patient');
+        if (tab && tab !== 'overview') queryParams.set('tab', tab);
+        targetUrl = `${pathname}?${queryParams.toString()}`;
       } else if (newMode === 'admin') {
+        const queryParams = new URLSearchParams();
+        queryParams.set('view', 'admin');
         const adminTab = tab || activeTab || 'dashboard';
-        targetUrl = `${pathname}?view=admin&tab=${adminTab}`;
+        queryParams.set('tab', adminTab);
+        targetUrl = `${pathname}?${queryParams.toString()}`;
       } else if (newMode === 'website') {
         targetUrl = targetId ? `${pathname}#${targetId}` : pathname;
       }
@@ -78,8 +91,9 @@ export default function App() {
       const stateObj = {
         viewMode: newMode,
         loginAsAdmin: admin,
+        loginMode: mode,
         targetId,
-        tab: newMode === 'admin' ? (tab || activeTab) : '',
+        tab: newMode === 'admin' ? (tab || activeTab) : tab,
       };
 
       const currentFullUrl = window.location.pathname + window.location.search + window.location.hash;
@@ -117,6 +131,20 @@ export default function App() {
     }
   };
 
+  const handleSelectPatientTab = (tab) => {
+    setPatientTab(tab);
+    if (typeof window !== 'undefined') {
+      const currentTab = new URLSearchParams(window.location.search).get('tab');
+      if (currentTab !== tab) {
+        window.history.pushState(
+          { viewMode: 'patient', patientTab: tab },
+          '',
+          `${window.location.pathname}?view=patient&tab=${tab}`
+        );
+      }
+    }
+  };
+
   // On mount: record initial state into browser history so Back button can return here
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -124,6 +152,7 @@ export default function App() {
         {
           viewMode: defaultMode,
           loginAsAdmin: initialIsAdmin,
+          loginMode: initialLoginMode,
           targetId: initialHash ? initialHash.replace('#', '') : '',
           tab: initialAdminTab || 'dashboard',
         },
@@ -141,6 +170,7 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const urlView = params.get('view');
       const isAdminLogin = params.get('admin') === 'true';
+      const urlMode = params.get('mode') || 'login';
       const urlTab = params.get('tab');
       const hashId = window.location.hash ? window.location.hash.replace('#', '') : '';
 
@@ -156,12 +186,18 @@ export default function App() {
       }
 
       const targetIsAdmin = event.state?.loginAsAdmin ?? isAdminLogin;
+      const targetModeType = event.state?.loginMode ?? urlMode;
       const targetTab = event.state?.tab || urlTab || 'dashboard';
 
       setViewMode(targetMode);
       setLoginAsAdmin(targetIsAdmin);
+      setLoginMode(targetModeType);
       if (targetMode === 'admin') {
         setActiveTab(targetTab);
+      }
+      if (targetMode === 'patient') {
+        const pTab = event.state?.patientTab || urlTab || 'overview';
+        setPatientTab(pTab);
       }
 
       if (targetMode === 'website' && hashId) {
@@ -186,14 +222,6 @@ export default function App() {
       }, 250);
     }
   }, [viewMode]);
-
-  // When user completes login while on login page, advance history to their portal
-  useEffect(() => {
-    if (user && viewMode === 'login') {
-      const targetMode = user.role === 'PATIENT' ? 'patient' : 'admin';
-      navigateTo(targetMode, { replace: true });
-    }
-  }, [user, viewMode]);
 
   // Admin View State
   const [stats, setStats] = useState(null);
@@ -287,12 +315,26 @@ export default function App() {
     );
   }
 
-  // 1. Unauthenticated or Explicit Login Portal (asking "Are you an Admin?")
-  if (!user && viewMode === 'login') {
+  // 1. Explicit Login Portal (asking "Are you an Admin?")
+  if (viewMode === 'login' || (!user && (viewMode === 'patient' || viewMode === 'admin'))) {
     return (
       <div className="relative">
         <PortalLoginPage
-          initialIsAdmin={loginAsAdmin}
+          currentUser={user}
+          initialIsAdmin={loginAsAdmin || viewMode === 'admin'}
+          initialMode={loginMode}
+          onSwitchAdmin={(isAdmin) => {
+            setLoginAsAdmin(isAdmin);
+            navigateTo('login', { admin: isAdmin, mode: loginMode });
+          }}
+          onSwitchMode={(mode) => {
+            setLoginMode(mode);
+            navigateTo('login', { admin: loginAsAdmin, mode });
+          }}
+          onLoginSuccess={(loggedInUser) => {
+            const targetMode = loggedInUser?.role === 'PATIENT' ? 'patient' : 'admin';
+            navigateTo(targetMode);
+          }}
           onGoToWebsite={() => navigateTo('website')}
         />
       </div>
@@ -387,9 +429,11 @@ export default function App() {
   }
 
   // 3. Authenticated Patient Portal
-  if (user && (viewMode === 'patient' || (user.role === 'PATIENT' && viewMode !== 'admin'))) {
+  if (user && (viewMode === 'patient' || (user.role === 'PATIENT' && viewMode !== 'admin' && viewMode !== 'website'))) {
     return (
       <PatientPortalView
+        initialTab={patientTab}
+        onSelectTab={handleSelectPatientTab}
         onBackToWebsite={() => navigateTo('website')}
         onSwitchToAdmin={async () => {
           if (user.role === 'ADMIN' || user.role === 'DOCTOR' || user.role === 'RECEPTIONIST') {

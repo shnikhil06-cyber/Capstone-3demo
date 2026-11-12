@@ -1,4 +1,4 @@
-# Rishi Healthcare - Super Speciality Hospital Management System (HMS)
+# Rishi Healthcare - Super Speciality Hospital Management System 
 
 A modern full-stack hospital management system and healthcare portal built with **pure JavaScript** across the entire stack. Features a public hospital web presence, an authenticated **Patient Health Portal**, and an **Admin & Clinical Staff Command Center**.
 

@@ -26,9 +26,20 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { api } from '../../services/api.js';
 import { getDoctorImage } from '../../services/doctorImages.js';
 
-export default function PatientPortalView({ onSwitchToAdmin, onBackToWebsite }) {
+export default function PatientPortalView({ onSwitchToAdmin, onBackToWebsite, initialTab = 'overview', onSelectTab }) {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab || 'overview');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  const handleSelectTab = (tabId) => {
+    setActiveTab(tabId);
+    if (onSelectTab) onSelectTab(tabId);
+  };
 
   const [appointments, setAppointments] = useState([]);
   const [records, setRecords] = useState([]);
@@ -98,7 +109,7 @@ export default function PatientPortalView({ onSwitchToAdmin, onBackToWebsite }) 
       setBookReason('');
       setBookSymptoms('');
       loadPatientData();
-      setActiveTab('appointments');
+      handleSelectTab('appointments');
     } catch (err) {
       alert(err.message);
     }
@@ -200,7 +211,7 @@ export default function PatientPortalView({ onSwitchToAdmin, onBackToWebsite }) 
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleSelectTab(tab.id)}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-maxorange-500 text-white shadow-xs'
@@ -263,7 +274,7 @@ export default function PatientPortalView({ onSwitchToAdmin, onBackToWebsite }) 
             {/* Overview KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div
-                onClick={() => setActiveTab('appointments')}
+                onClick={() => handleSelectTab('appointments')}
                 className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs cursor-pointer hover:border-maxorange-400 transition-all"
               >
                 <div className="flex items-center justify-between text-slate-500">
@@ -281,7 +292,7 @@ export default function PatientPortalView({ onSwitchToAdmin, onBackToWebsite }) 
               </div>
 
               <div
-                onClick={() => setActiveTab('records')}
+                onClick={() => handleSelectTab('records')}
                 className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs cursor-pointer hover:border-maxorange-400 transition-all"
               >
                 <div className="flex items-center justify-between text-slate-500">
@@ -299,7 +310,7 @@ export default function PatientPortalView({ onSwitchToAdmin, onBackToWebsite }) 
               </div>
 
               <div
-                onClick={() => setActiveTab('bills')}
+                onClick={() => handleSelectTab('bills')}
                 className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs cursor-pointer hover:border-maxorange-400 transition-all"
               >
                 <div className="flex items-center justify-between text-slate-500">
