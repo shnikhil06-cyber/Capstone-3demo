@@ -1,6 +1,4 @@
 import express from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
 import dotenv from 'dotenv';
 
 import authRoutes from './routes/auth.routes.js';
@@ -22,12 +20,16 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Global Middlewares
-app.use(cors({
-  origin: '*',
-  credentials: true,
-}));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 app.use(express.json());
-app.use(morgan('dev'));
 
 // Health Check
 app.get('/api/health', (_req, res) => {
