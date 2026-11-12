@@ -78,21 +78,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/medical-records
 router.post('/', async (req, res) => {
   try {
-    const {
-      patientId,
-      doctorId,
-      appointmentId,
-      diagnosis,
-      symptoms,
-      vitalsBp,
-      vitalsPulse,
-      vitalsTemp,
-      vitalsWeight,
-      doctorNotes,
-      followUpDate,
-      prescriptionItems = [],
-      prescriptionNotes,
-    } = req.body;
+    const { patientId, doctorId, appointmentId, diagnosis, symptoms, vitalsBp, vitalsPulse, vitalsTemp, vitalsWeight, doctorNotes, followUpDate, prescriptionItems = [], prescriptionNotes } = req.body;
 
     if (!patientId || !doctorId || !diagnosis) {
       return res.status(400).json({ error: 'Patient, Doctor, and Diagnosis are required' });

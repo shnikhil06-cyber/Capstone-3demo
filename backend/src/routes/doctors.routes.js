@@ -85,19 +85,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/doctors
 router.post('/', async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      phone,
-      password = 'Password@123',
-      departmentId,
-      specialization,
-      qualification,
-      experienceYears = 0,
-      consultationFee = 500,
-      roomNo,
-      workingHours = '09:00 AM - 05:00 PM',
-    } = req.body;
+    const { name, email, phone, password = 'Password@123', departmentId, specialization, qualification, experienceYears = 0, consultationFee = 500, roomNo, workingHours = '09:00 AM - 05:00 PM' } = req.body;
 
     if (!name || !email || !departmentId || !specialization || !qualification) {
       return res.status(400).json({ error: 'Name, email, department, specialization, and qualification are required' });
@@ -153,17 +141,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      specialization,
-      qualification,
-      experienceYears,
-      consultationFee,
-      roomNo,
-      workingHours,
-      isAvailable,
-      name,
-      phone,
-    } = req.body;
+    const { specialization, qualification, experienceYears, consultationFee, roomNo, workingHours, isAvailable, name, phone } = req.body;
 
     const doctor = await prisma.doctor.findUnique({ where: { id } });
     if (!doctor) {

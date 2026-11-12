@@ -74,16 +74,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/billing
 router.post('/', async (req, res) => {
   try {
-    const {
-      patientId,
-      appointmentId,
-      admissionId,
-      items = [],
-      taxRate = 5.0,
-      discount = 0,
-      paymentMethod = 'CASH',
-      notes,
-    } = req.body;
+    const { patientId, appointmentId, admissionId, items = [], taxRate = 5.0, discount = 0, paymentMethod = 'CASH', notes } = req.body;
 
     if (!patientId || items.length === 0) {
       return res.status(400).json({ error: 'Patient and at least one item are required' });

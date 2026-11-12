@@ -40,17 +40,7 @@ router.get('/medicines', async (req, res) => {
 // POST /api/pharmacy/medicines
 router.post('/medicines', async (req, res) => {
   try {
-    const {
-      name,
-      genericName,
-      category,
-      manufacturer,
-      dosageForm = 'TABLET',
-      stock = 0,
-      minStockAlert = 10,
-      unitPrice,
-      expiryDate,
-    } = req.body;
+    const { name, genericName, category, manufacturer, dosageForm = 'TABLET', stock = 0, minStockAlert = 10, unitPrice, expiryDate } = req.body;
 
     if (!name || !category || unitPrice === undefined || !expiryDate) {
       return res.status(400).json({ error: 'Name, Category, Unit Price, and Expiry Date are required' });
@@ -84,17 +74,7 @@ router.post('/medicines', async (req, res) => {
 router.put('/medicines/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      name,
-      genericName,
-      category,
-      manufacturer,
-      dosageForm,
-      stock,
-      minStockAlert,
-      unitPrice,
-      expiryDate,
-    } = req.body;
+    const { name, genericName, category, manufacturer, dosageForm, stock, minStockAlert, unitPrice, expiryDate } = req.body;
 
     const updated = await prisma.medicine.update({
       where: { id },

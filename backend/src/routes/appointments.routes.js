@@ -95,17 +95,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/appointments
 router.post('/', async (req, res) => {
   try {
-    const {
-      patientId,
-      doctorId,
-      departmentId,
-      appointmentDate,
-      timeSlot,
-      type = 'CONSULTATION',
-      reason,
-      symptoms,
-      notes,
-    } = req.body;
+    const { patientId, doctorId, departmentId, appointmentDate, timeSlot, type = 'CONSULTATION', reason, symptoms, notes } = req.body;
 
     if (!patientId || !doctorId || !departmentId || !appointmentDate || !timeSlot || !reason) {
       return res.status(400).json({ error: 'Patient, Doctor, Department, Date, Time Slot, and Reason are required' });

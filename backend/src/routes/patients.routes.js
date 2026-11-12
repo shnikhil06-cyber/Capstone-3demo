@@ -113,20 +113,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/patients
 router.post('/', async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      phone,
-      gender,
-      age,
-      bloodGroup,
-      address,
-      emergencyContactName,
-      emergencyContactPhone,
-      allergies,
-      chronicConditions,
-      dateOfBirth,
-    } = req.body;
+    const { name, email, phone, gender, age, bloodGroup, address, emergencyContactName, emergencyContactPhone, allergies, chronicConditions, dateOfBirth } = req.body;
 
     if (!name || !phone || !gender) {
       return res.status(400).json({ error: 'Name, phone, and gender are required' });
@@ -163,20 +150,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      name,
-      email,
-      phone,
-      gender,
-      age,
-      bloodGroup,
-      address,
-      emergencyContactName,
-      emergencyContactPhone,
-      allergies,
-      chronicConditions,
-      dateOfBirth,
-    } = req.body;
+    const { name, email, phone, gender, age, bloodGroup, address, emergencyContactName, emergencyContactPhone, allergies, chronicConditions, dateOfBirth } = req.body;
 
     const updated = await prisma.patient.update({
       where: { id },
