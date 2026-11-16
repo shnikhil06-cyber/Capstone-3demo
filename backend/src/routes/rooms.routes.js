@@ -1,22 +1,26 @@
-import { Router } from 'express';
-import prisma from '../prisma.js';
+import { Router } from "express";
+import prisma from "../prisma.js";
 
 const router = Router();
 
 // GET /api/rooms
-router.get('/', async (_req, res) => {
+router.get("/", async (_req, res) => {
   try {
     const rooms = await prisma.room.findMany({
-      orderBy: { roomNumber: 'asc' },
+      orderBy: { roomNumber: "asc" },
       include: {
         beds: {
-          orderBy: { bedNumber: 'asc' },
+          orderBy: { bedNumber: "asc" },
           include: {
             admissions: {
-              where: { status: 'ADMITTED' },
+              where: { status: "ADMITTED" },
               include: {
-                patient: { select: { id: true, name: true, patientCode: true } },
-                attendingDoctor: { include: { user: { select: { name: true } } } },
+                patient: {
+                  select: { id: true, name: true, patientCode: true },
+                },
+                attendingDoctor: {
+                  include: { user: { select: { name: true } } },
+                },
               },
             },
           },
@@ -31,21 +35,22 @@ router.get('/', async (_req, res) => {
 });
 
 // GET /api/rooms/beds
-router.get('/beds', async (req, res) => {
+router.get("/beds", async (req, res) => {
   try {
     const { status, roomType } = req.query;
 
     const where = {};
-    if (status && status !== 'ALL') where.status = String(status);
-    if (roomType && roomType !== 'ALL') where.room = { roomType: String(roomType) };
+    if (status && status !== "ALL") where.status = String(status);
+    if (roomType && roomType !== "ALL")
+      where.room = { roomType: String(roomType) };
 
     const beds = await prisma.bed.findMany({
       where,
-      orderBy: { bedNumber: 'asc' },
+      orderBy: { bedNumber: "asc" },
       include: {
         room: true,
         admissions: {
-          where: { status: 'ADMITTED' },
+          where: { status: "ADMITTED" },
           include: {
             patient: true,
             attendingDoctor: { include: { user: { select: { name: true } } } },
@@ -61,23 +66,29 @@ router.get('/beds', async (req, res) => {
 });
 
 // POST /api/rooms/admissions
-router.post('/admissions', async (req, res) => {
+router.post("/admissions", async (req, res) => {
   try {
     const { patientId, bedId, attendingDoctorId, reason, notes } = req.body;
     if (!patientId || !bedId || !attendingDoctorId || !reason) {
-      return res.status(400).json({ error: 'Patient, Bed, Attending Doctor, and Reason are required' });
+      return res
+        .status(400)
+        .json({
+          error: "Patient, Bed, Attending Doctor, and Reason are required",
+        });
     }
 
     const bed = await prisma.bed.findUnique({ where: { id: bedId } });
     if (!bed) {
-      return res.status(404).json({ error: 'Bed not found' });
+      return res.status(404).json({ error: "Bed not found" });
     }
-    if (bed.status !== 'AVAILABLE') {
-      return res.status(400).json({ error: `Bed ${bed.bedNumber} is currently ${bed.status}` });
+    if (bed.status !== "AVAILABLE") {
+      return res
+        .status(400)
+        .json({ error: `Bed ${bed.bedNumber} is currently ${bed.status}` });
     }
 
     const admissionCount = await prisma.admission.count();
-    const admissionCode = `ADM-2026-${String(admissionCount + 1).padStart(3, '0')}`;
+    const admissionCode = `ADM-2026-${String(admissionCount + 1).padStart(3, "0")}`;
 
     const admission = await prisma.$transaction(async (tx) => {
       const adm = await tx.admission.create({
@@ -88,7 +99,7 @@ router.post('/admissions', async (req, res) => {
           attendingDoctorId,
           reason: reason.trim(),
           notes: notes ? notes.trim() : null,
-          status: 'ADMITTED',
+          status: "ADMITTED",
         },
         include: {
           patient: true,
@@ -99,7 +110,7 @@ router.post('/admissions', async (req, res) => {
 
       await tx.bed.update({
         where: { id: bedId },
-        data: { status: 'OCCUPIED' },
+        data: { status: "OCCUPIED" },
       });
 
       return adm;
@@ -112,7 +123,7 @@ router.post('/admissions', async (req, res) => {
 });
 
 // POST /api/rooms/admissions/:id/discharge
-router.post('/admissions/:id/discharge', async (req, res) => {
+router.post("/admissions/:id/discharge", async (req, res) => {
   try {
     const { id } = req.params;
     const admission = await prisma.admission.findUnique({
@@ -121,17 +132,21 @@ router.post('/admissions/:id/discharge', async (req, res) => {
     });
 
     if (!admission) {
-      return res.status(404).json({ error: 'Admission not found' });
+      return res.status(404).json({ error: "Admission not found" });
     }
 
-    if (admission.status === 'DISCHARGED') {
-      return res.status(400).json({ error: 'Patient is already discharged' });
+    if (admission.status === "DISCHARGED") {
+      return res.status(400).json({ error: "Patient is already discharged" });
     }
 
     const dischargeDate = new Date();
     const daysStayed = Math.max(
       1,
-      Math.ceil((dischargeDate.getTime() - new Date(admission.admissionDate).getTime()) / (1000 * 60 * 60 * 24))
+      Math.ceil(
+        (dischargeDate.getTime() -
+          new Date(admission.admissionDate).getTime()) /
+          (1000 * 60 * 60 * 24),
+      ),
     );
     const roomRate = admission.bed.room.dailyRate;
     const totalBedCharges = daysStayed * roomRate;
@@ -140,18 +155,18 @@ router.post('/admissions/:id/discharge', async (req, res) => {
       const updatedAdm = await tx.admission.update({
         where: { id },
         data: {
-          status: 'DISCHARGED',
+          status: "DISCHARGED",
           dischargeDate,
         },
       });
 
       await tx.bed.update({
         where: { id: admission.bedId },
-        data: { status: 'AVAILABLE' },
+        data: { status: "AVAILABLE" },
       });
 
       const invoiceCount = await prisma.bill.count();
-      const invoiceNumber = `INV-2026-${String(invoiceCount + 1).padStart(3, '0')}`;
+      const invoiceNumber = `INV-2026-${String(invoiceCount + 1).padStart(3, "0")}`;
       const taxRate = 5.0;
       const taxAmount = (totalBedCharges * taxRate) / 100;
       const totalAmount = totalBedCharges + taxAmount;
@@ -169,14 +184,14 @@ router.post('/admissions/:id/discharge', async (req, res) => {
           discount: 0,
           totalAmount,
           paidAmount: 0,
-          status: 'UNPAID',
-          paymentMethod: 'CASH',
+          status: "UNPAID",
+          paymentMethod: "CASH",
           notes: `Discharge bill for ${daysStayed} day(s) stay in Room ${admission.bed.room.roomNumber} (${admission.bed.bedNumber})`,
           items: {
             create: [
               {
                 description: `Room & Bed Accommodation (${daysStayed} day(s) @ ₹${roomRate}/day)`,
-                category: 'BED_CHARGE',
+                category: "BED_CHARGE",
                 quantity: daysStayed,
                 unitPrice: roomRate,
                 totalPrice: totalBedCharges,
@@ -196,13 +211,15 @@ router.post('/admissions/:id/discharge', async (req, res) => {
 });
 
 // PATCH /api/rooms/beds/:id/status
-router.patch('/beds/:id/status', async (req, res) => {
+router.patch("/beds/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!['AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'RESERVED'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid bed status' });
+    if (
+      !["AVAILABLE", "OCCUPIED", "MAINTENANCE", "RESERVED"].includes(status)
+    ) {
+      return res.status(400).json({ error: "Invalid bed status" });
     }
 
     const bed = await prisma.bed.update({
@@ -218,4 +235,3 @@ router.patch('/beds/:id/status', async (req, res) => {
 });
 
 export default router;
-
