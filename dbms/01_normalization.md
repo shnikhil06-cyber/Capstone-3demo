@@ -216,3 +216,4 @@ LabReport:
 1. **Storage Optimization**: Redundant text strings (e.g. repeated department names, room rates, test names) are stored exactly once.
 2. **Transaction Integrity**: Modifying a doctor's fee or room's daily rate immediately updates future workflows without corrupting historical billing tables.
 3. **Auditability & Traceability**: Each clinical record, admission, prescription item, lab report, and tax invoice is cleanly linked via surrogate UUIDs and human-readable business codes (`PAT-1001`, `APT-2026-101`, `INV-2026-001`, `MED-101`, `LAB-101`).
+

@@ -323,3 +323,4 @@ erDiagram
 - `LabTest` $\to$ `LabReport` (1:N): A standardized test (e.g. *HbA1c*, *Lipid Profile*) is ordered for many patients.
 - `Patient` $\to$ `LabReport` (1:N): A patient receives multiple diagnostic reports.
 - `Doctor` $\to$ `LabReport` (1:N): A clinician orders and reviews diagnostic lab reports.
+
